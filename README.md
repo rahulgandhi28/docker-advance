@@ -4,23 +4,20 @@ Optimized Dockerfile for Build Speed and Image Size
 
 
  # Original Docker File
-FROM node:14
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm install
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
 
-
-  
-
-
-  
+```DockerFile
+FROM node:14  
+WORKDIR /usr/src/app  
+COPY package*.json ./  
+RUN npm install  
+COPY . .  
+EXPOSE 3000  
+CMD ["npm", "start"]  
+```
 
 # Optimised Docker File 
 
-
+```DockerFile
 # Stage 1: Build the application
 FROM node:14 AS build-stage
 
@@ -53,20 +50,20 @@ EXPOSE 3000
 
 # Start the application
 CMD ["node", "dist/server.js"]
-
+```
 
 # Setup a Docker Network from docker compose
-
+```
 version: '3.9'
 
 services:
-  app1:
+  test1:
     image: nginx
     networks:
       - my_network
     restart: unless-stopped
 
-  app2:
+  test2:
     image: nginx
     networks:
       - my_network
@@ -75,52 +72,61 @@ services:
 networks:
   my_network:
     driver: bridge
-
+```
 
 
 # To inspect the network 
-docker network inspect my_network
+``` docker network inspect my_network ```
 
 
 # Create and Manage Volumes:
+```
 docker volume create my_volume
+
+# Using bind mounts 
 docker run -d --name my_container -v my_volume:/data myimage:latest
+```
 
 # Example with Multiple Containers
+```
 docker run -d --name test1 -v /host/data:/shared_data myimage
 docker run -d --name test2 -v /host/data:/shared_data myimage
-
+```
 
 # Backup and Restore Data:
+```
 docker run --rm -v my_volume:/data -v $(pwd):/backup alpine tar czf /backup/backup.tar.gz -C /data .
 docker run --rm -v my_volume:/data -v $(pwd):/backup alpine sh -c "tar xzf /backup/backup.tar.gz -C /data"
-
+```
 # Implementing Security Best Practices
 
-  # User Permissions
 # Add a non-root user in your Dockerfile:
+```
 RUN adduser --disabled-password myuser
 USER myuser
-
+```
 # Image Vulnerability Scanning
-docker scan myimage
+```docker scan myimage ```
 
 
 # Secret Management:
+```
 echo "my_secret" | docker secret create my_secret -
 docker service create --name my_service --secret my_secret myimage
-
+```
 
 # Run Containers with Least Privilege
+```
 docker run --user 1000:1000 mysql
-
+```
 # Use Docker Bench for Security
 ->Install Docker Bench for Security
+```
 git clone https://github.com/docker/docker-bench-security.git
 cd docker-bench-security
-
--> Run docker bench 
-sudo ./docker-bench-security.sh
+```
+-> Run docker bench  
+```sudo ./docker-bench-security.sh ```
 
 
 
