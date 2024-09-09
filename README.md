@@ -5,64 +5,134 @@
  
 # Original Docker File
 
-##
   
-FROM maven:3.5-jdk-8
+# Base image
+FROM node:14
 
-COPY src /usr/src/myapp/src
-COPY pom.xml /usr/src/myapp
-RUN mvn -f /usr/src/myapp/pom.xml clean package
+# Set working directory
+WORKDIR /usr/src/app
 
-ENV WILDFLY_VERSION 10.1.0.Final
-ENV WILDFLY_HOME /usr
+# Install dependencies
+COPY package*.json ./
+RUN npm install
 
-RUN cd $WILDFLY_HOME && curl http://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz | tar zx && mv $WILDFLY_HOME/wildfly-$WILDFLY_VERSION $WILDFLY_HOME/wildfly
+# Copy application code
+COPY . .
 
-RUN cp /usr/src/myapp/target/people-1.0-SNAPSHOT.war $WILDFLY_HOME/wildfly/standalone/deployments/people.war
+# Expose port
+EXPOSE 3000
 
-EXPOSE 8080
+# Start the application
+CMD ["npm", "start"]
 
-CMD ["/usr/wildfly/bin/standalone.sh", "-b", "0.0.0.0"]
 
-'''
+  
 
 # Optimised Docker File 
-'''
+
+
 # Stage 1: Build the application
-FROM maven:3.5-jdk-8 AS build
+FROM node:14 AS build-stage
 
-WORKDIR /usr/src/myapp
+# Set working directory
+WORKDIR /usr/src/app
 
-COPY pom.xml .
-COPY src ./src
+# Install dependencies
+COPY package*.json ./
+RUN npm install
 
-# Build the application
-RUN mvn clean package
+# Copy application code
+COPY . .
 
-# Stage 2: Setup WildFly and deploy the application
-FROM openjdk:8-jdk-alpine
+# Build the application (if needed, e.g., for TypeScript or build tools)
+# RUN npm run build 
 
-ENV WILDFLY_VERSION 10.1.0.Final
-ENV WILDFLY_HOME /opt/wildfly
+# Stage 2: Create the final image
+FROM node:14-slim AS production-stage
 
-# Install necessary dependencies
-RUN apk --no-cache add curl tar
+# Set working directory
+WORKDIR /usr/src/app
 
-# Download and install WildFly
-RUN curl -L http://download.jboss.org/wildfly/$WILDFLY_VERSION/wildfly-$WILDFLY_VERSION.tar.gz | tar xz -C /opt && \
-    mv /opt/wildfly-$WILDFLY_VERSION $WILDFLY_HOME
+# Copy only the necessary artifacts from the build stage
+COPY --from=build-stage /usr/src/app/node_modules ./node_modules
+COPY --from=build-stage /usr/src/app/package*.json ./
+COPY --from=build-stage /usr/src/app/dist ./dist
 
-# Copy the WAR file from the build stage
-COPY --from=build /usr/src/myapp/target/people-1.0-SNAPSHOT.war $WILDFLY_HOME/standalone/deployments/people.war
+# Expose port
+EXPOSE 3000
 
-# Expose the application port
-EXPOSE 8080
+# Start the application
+CMD ["node", "dist/server.js"]
 
-# Start WildFly
-CMD ["sh", "-c", "$WILDFLY_HOME/bin/standalone.sh -b 0.0.0.0"]
 
-'''
+# Setup a Docker Network from docker compose
 
-Thanks
+version: '3.9'
+
+services:
+  app1:
+    image: nginx
+    networks:
+      - my_network
+    restart: unless-stopped
+
+  app2:
+    image: nginx
+    networks:
+      - my_network
+    restart: unless-stopped
+
+networks:
+  my_network:
+    driver: bridge
+
+
+
+# To inspect the network 
+docker network inspect my_network
+
+
+# Create and Manage Volumes:
+docker volume create my_volume
+docker run -d --name my_container -v my_volume:/data myimage:latest
+
+# Example with Multiple Containers
+docker run -d --name test1 -v /host/data:/shared_data myimage
+docker run -d --name test2 -v /host/data:/shared_data myimage
+
+
+# Backup and Restore Data:
+docker run --rm -v my_volume:/data -v $(pwd):/backup alpine tar czf /backup/backup.tar.gz -C /data .
+docker run --rm -v my_volume:/data -v $(pwd):/backup alpine sh -c "tar xzf /backup/backup.tar.gz -C /data"
+
+# Implementing Security Best Practices
+
+  # User Permissions
+# Add a non-root user in your Dockerfile:
+RUN adduser --disabled-password myuser
+USER myuser
+
+# Image Vulnerability Scanning
+docker scan myimage
+
+
+# Secret Management:
+echo "my_secret" | docker secret create my_secret -
+docker service create --name my_service --secret my_secret myimage
+
+
+# Run Containers with Least Privilege
+docker run --user 1000:1000 mysql
+
+# Use Docker Bench for Security
+->Install Docker Bench for Security
+git clone https://github.com/docker/docker-bench-security.git
+cd docker-bench-security
+
+-> Run docker bench 
+sudo ./docker-bench-security.sh
+
+
+
 
 
