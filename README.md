@@ -96,6 +96,8 @@ docker run -d --name test2 -v /host/data:/shared_data myimage
 # Backup and Restore Data:
 ```
 docker run --rm -v my_volume:/data -v $(pwd):/backup alpine tar czf /backup/backup.tar.gz -C /data .
+
+-> Restore
 docker run --rm -v my_volume:/data -v $(pwd):/backup alpine sh -c "tar xzf /backup/backup.tar.gz -C /data"
 ```
 # Implementing Security Best Practices
