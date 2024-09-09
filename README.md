@@ -1,12 +1,10 @@
 # Docker-Advance- Assignment
 
- 1. Optimized Dockerfile for Build Speed and Image Size
+Optimized Dockerfile for Build Speed and Image Size
 
- 
-# Original Docker File
 
-  
-# Base image
+ # Original Docker File
+   # Base image
 FROM node:14
 
 # Set working directory
@@ -24,6 +22,9 @@ EXPOSE 3000
 
 # Start the application
 CMD ["npm", "start"]
+
+
+  
 
 
   
